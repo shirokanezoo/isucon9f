@@ -4,7 +4,7 @@ Description = isutrain
 [Service]
 Type=simple
 
-ExecStart=/home/isucon/git/webapp/ruby/run.sh
+ExecStart=/home/isucon/git/isutrain/webapp/ruby/run.sh
 
 RuntimeDirectory=isutrain
 WorkingDirectory=/home/isucon/git/isutrain/webapp/ruby
