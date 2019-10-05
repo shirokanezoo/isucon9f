@@ -1,0 +1,11 @@
+Host isu1
+  Hostname team041-a.isucon9.hinatan.net
+Host isu2
+  Hostname team041-b.isucon9.hinatan.net
+Host isu3
+  Hostname team041-c.isucon9.hinatan.net
+Host isu1 isu2 isu3
+  Port 22
+  User isucon
+  IdentityFile ~/.ssh/id_rsa
+  IdentitiesOnly yes
