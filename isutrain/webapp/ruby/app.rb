@@ -11,6 +11,7 @@ require 'new_relic/agent/method_tracer'
 require 'new_relic/agent/tracer'
 
 require './utils'
+require './station'
 
 class Mysql2ClientWithNewRelic < Mysql2::Client
   def initialize(*args)
@@ -117,17 +118,11 @@ module Isutrain
         # 料金計算メモ
         # 距離運賃(円) * 期間倍率(繁忙期なら2倍等) * 車両クラス倍率(急行・各停等) * 座席クラス倍率(プレミアム・指定席・自由席)
 
-        from_station = db.xquery(
-          'SELECT * FROM `station_master` WHERE `id` = ?',
-          dep_station,
-        ).first
+        from_station = STATIONS_HASH_BY_ID[dep_station]
 
         raise ErrorNoRows if from_station.nil?
 
-        to_station = db.xquery(
-          'SELECT * FROM `station_master` WHERE `id` = ?',
-          dest_station,
-        ).first
+        to_station = STATIONS_HASH_BY_ID[dest_station]
 
         raise ErrorNoRows if to_station.nil?
 
@@ -278,12 +273,8 @@ module Isutrain
     end
 
     get '/api/stations' do
-      stations = db.query('SELECT * FROM `station_master` ORDER BY `id`').map do |station|
-        station.slice(:id, :name, :is_stop_express, :is_stop_semi_express, :is_stop_local)
-      end
-
       content_type :json
-      stations.to_json
+      STATIONS_SORTED_BY_ID.to_json
     end
 
     get '/api/train/search' do
@@ -291,20 +282,14 @@ module Isutrain
 
       halt_with_error 404, '予約可能期間外です' unless check_available_date(date)
 
-      from_station = db.xquery(
-        'SELECT * FROM station_master WHERE name = ?',
-        params[:from],
-      ).first
+      from_station = STATIONS_HASH_BY_NAME[params[:from]]
 
       if from_station.nil?
         puts 'fromStation: no rows'
         halt_with_error 400, 'fromStation: no rows'
       end
 
-      to_station = db.xquery(
-        'SELECT * FROM station_master WHERE name = ?',
-        params[:to],
-      ).first
+      to_station = STATIONS_HASH_BY_NAME[params[:to]]
 
       if to_station.nil?
         puts 'toStation: no rows'
@@ -332,9 +317,8 @@ module Isutrain
         )
       end
 
-      stations = db.xquery(
-        "SELECT * FROM `station_master` ORDER BY `distance` #{is_nobori ? 'DESC' : 'ASC'}",
-      )
+      stations = STATIONS_SORTED_BY_DISTANCE.dup
+      stations = stations.reverse if is_nobori
 
       puts "From #{from_station}"
       puts "To #{to_station}"
@@ -506,10 +490,7 @@ module Isutrain
       halt_with_error 404, '列車が存在しません' if train.nil?
 
       from_name = params[:from]
-      from_station = db.xquery(
-        'SELECT * FROM `station_master` WHERE `name` = ?',
-        from_name,
-      ).first
+      from_station = STATIONS_HASH_BY_NAME[from_name]
 
       if from_station.nil?
         puts 'fromStation: no rows'
@@ -517,10 +498,7 @@ module Isutrain
       end
 
       to_name = params[:to]
-      to_station = db.xquery(
-        'SELECT * FROM `station_master` WHERE `name` = ?',
-        to_name,
-      ).first
+      to_station = STATIONS_HASH_BY_NAME[to_name]
 
       if to_station.nil?
         puts 'toStation: no rows'
@@ -583,15 +561,8 @@ __EOF
             seat_reservation[:reservation_id],
           ).first
 
-          departure_station = db.xquery(
-            'SELECT * FROM `station_master` WHERE `name` = ?',
-            reservation[:departure],
-          ).first
-
-          arrival_station = db.xquery(
-            'SELECT * FROM `station_master` WHERE `name` = ?',
-            reservation[:arrival],
-          ).first
+          departure_station = STATIONS_HASH_BY_NAME[reservation[:departure]]
+          arrival_station = STATIONS_HASH_BY_NAME[reservation[:arrival]]
 
           if train[:is_nobori]
             # 上り
@@ -684,11 +655,8 @@ __EOF
 
         # 列車自体の駅IDを求める
         departure_station = begin
-          db.xquery(
-            'SELECT * FROM `station_master` WHERE `name` = ?',
-            tmas[:start_station],
-          ).first
-        rescue Mysql2::Error => e
+          STATIONS_HASH_BY_NAME.fetch(tmas[:start_station])
+        rescue KeyError => e
           db.query('ROLLBACK')
           puts e.message
           halt_with_error 500, 'リクエストされた列車の始発駅データの取得に失敗しました'
@@ -701,11 +669,8 @@ __EOF
 
         # Arrive
         arrival_station = begin
-          db.xquery(
-            'SELECT * FROM `station_master` WHERE `name` = ?',
-            tmas[:last_station],
-          ).first
-        rescue Mysql2::Error => e
+          STATIONS_HASH_BY_NAME.fetch(tmas[:last_station])
+        rescue KeyError => e
           db.query('ROLLBACK')
           puts e.message
           halt_with_error 500, 'リクエストされた列車の終着駅データの取得に失敗しました'
@@ -718,11 +683,8 @@ __EOF
 
         # From
         from_station = begin
-          db.xquery(
-            'SELECT * FROM `station_master` WHERE `name` = ?',
-            body_params[:departure],
-          ).first
-        rescue Mysql2::Error => e
+          STATIONS_HASH_BY_NAME.fetch(body_params[:departure])
+        rescue KeyError => e
           db.query('ROLLBACK')
           puts e.message
           halt_with_error 500, '乗車駅データの取得に失敗しました'
@@ -735,11 +697,8 @@ __EOF
 
         # To
         to_station = begin
-          db.xquery(
-            'SELECT * FROM `station_master` WHERE `name` = ?',
-            body_params[:arrival],
-          ).first
-        rescue Mysql2::Error => e
+          STATIONS_HASH_BY_NAME.fetch(body_params[:arrival])
+        rescue KeyError => e
           db.query('ROLLBACK')
           puts e.message
           halt_with_error 500, '降車駅駅データの取得に失敗しました'
@@ -884,10 +843,7 @@ __EOF
                   end
 
                   departure_station = begin
-                    db.xquery(
-                      'SELECT * FROM `station_master` WHERE `name` = ?',
-                      reservation[:departure],
-                    ).first
+                    STATIONS_HASH_BY_NAME[reservation[:departure]]
                   rescue Mysql2::Error => e
                     db.query('ROLLBACK')
                     puts e.message
@@ -900,10 +856,7 @@ __EOF
                   end
 
                   arrival_station = begin
-                    db.xquery(
-                      'SELECT * FROM `station_master` WHERE `name` = ?',
-                      reservation[:arrival],
-                    ).first
+                    STATIONS_HASH_BY_NAME[reservation[:arrival]]
                   rescue Mysql2::Error => e
                     db.query('ROLLBACK')
                     puts e.message
@@ -1075,10 +1028,7 @@ __EOF
 
           # From
           reserved_from_station = begin
-            db.xquery(
-              'SELECT * FROM `station_master` WHERE `name` = ?',
-              reservation[:departure],
-            ).first
+            STATIONS_HASH_BY_NAME[reservation[:departure]]
           rescue Mysql2::Error => e
             puts e.message
             db.query('ROLLBACK')
@@ -1092,10 +1042,7 @@ __EOF
 
           # To
           reserved_to_station = begin
-            db.xquery(
-              'SELECT * FROM `station_master` WHERE `name` = ?',
-              reservation[:arrival],
-            ).first
+            STATIONS_HASH_BY_NAME[reservation[:arrival]]
           rescue Mysql2::Error => e
             puts e.message
             db.query('ROLLBACK')
