@@ -619,7 +619,7 @@ module Isutrain
           Isutrain.get_train(date, body_params[:train_class], body_params[:train_name])
         rescue Mysql2::Error => e
           db_transaction_rollback
-          puts e.message
+          puts e.full_message
           halt_with_error 500, '列車データの取得に失敗しました'
         end
 
@@ -635,7 +635,7 @@ module Isutrain
           STATIONS_HASH_BY_NAME.fetch(tmas[:start_station])
         rescue KeyError => e
           db_transaction_rollback
-          puts e.message
+          puts e.full_message
           halt_with_error 500, 'リクエストされた列車の始発駅データの取得に失敗しました'
         end
 
@@ -649,7 +649,7 @@ module Isutrain
           STATIONS_HASH_BY_NAME.fetch(tmas[:last_station])
         rescue KeyError => e
           db_transaction_rollback
-          puts e.message
+          puts e.full_message
           halt_with_error 500, 'リクエストされた列車の終着駅データの取得に失敗しました'
         end
 
@@ -663,7 +663,7 @@ module Isutrain
           STATIONS_HASH_BY_NAME.fetch(body_params[:departure])
         rescue KeyError => e
           db_transaction_rollback
-          puts e.message
+          puts e.full_message
           halt_with_error 500, '乗車駅データの取得に失敗しました'
         end
 
@@ -677,7 +677,7 @@ module Isutrain
           STATIONS_HASH_BY_NAME.fetch(body_params[:arrival])
         rescue KeyError => e
           db_transaction_rollback
-          puts e.message
+          puts e.full_message
           halt_with_error 500, '降車駅駅データの取得に失敗しました'
         end
 
@@ -738,7 +738,7 @@ module Isutrain
               Isutrain.get_train(date, body_params[:train_class], body_params[:train_name])
             rescue Mysql2::Error => e
               db_transaction_rollback
-              puts e.message
+              puts e.full_message
               halt_with_error 400, e.message
             end
 
@@ -766,7 +766,7 @@ module Isutrain
               end
             rescue Mysql2::Error => e
               db_transaction_rollback
-              puts e.message
+              puts e.full_message
               halt_with_error 400, e.message
             end
 
@@ -777,7 +777,7 @@ module Isutrain
                 end
               rescue Mysql2::Error => e
                 db_transaction_rollback
-                puts e.message
+                puts e.full_message
                 halt_with_error 400, e.message
               end
 
@@ -796,7 +796,7 @@ module Isutrain
                   seat_reservations[id] || []
                 rescue Mysql2::Error => e
                   db_transaction_rollback
-                  puts e.message
+                  puts e.full_message
                   halt_with_error 400, e.message
                 end
 
@@ -808,7 +808,7 @@ module Isutrain
                     ).first
                   rescue Mysql2::Error => e
                     db_transaction_rollback
-                    puts e.message
+                    puts e.full_message
                     halt_with_error 400, e.message
                   end
 
@@ -821,7 +821,7 @@ module Isutrain
                     STATIONS_HASH_BY_NAME[reservation[:departure]]
                   rescue Mysql2::Error => e
                     db_transaction_rollback
-                    puts e.message
+                    puts e.full_message
                     halt_with_error 400, e.message
                   end
 
@@ -834,7 +834,7 @@ module Isutrain
                     STATIONS_HASH_BY_NAME[reservation[:arrival]]
                   rescue Mysql2::Error => e
                     db_transaction_rollback
-                    puts e.message
+                    puts e.full_message
                     halt_with_error 400, e.message
                   end
 
@@ -947,7 +947,7 @@ module Isutrain
                 seat[:seat_row] == z[:row].to_i && seat[:seat_column] == z[:column] && seat[:seat_class] == body_params[:seat_class]
               end
             rescue Mysql2::Error => e
-              puts e.message
+              puts e.full_message
               db_transaction_rollback
               halt_with_error 400, e.message
             end
@@ -967,7 +967,7 @@ module Isutrain
             body_params[:train_name],
           )
         rescue Mysql2::Error => e
-          puts e.message
+          puts e.full_message
           db_transaction_rollback
           halt_with_error 500, '列車予約情報の取得に失敗しました'
         end
@@ -979,7 +979,7 @@ module Isutrain
           tmas = begin
             Isutrain.get_train(date, body_params[:train_class], body_params[:train_name])
           rescue Mysql2::Error => e
-            puts e.message
+            puts e.full_message
             db_transaction_rollback
             halt_with_error 500, '列車データの取得に失敗しました'
           end
@@ -995,7 +995,7 @@ module Isutrain
           reserved_from_station = begin
             STATIONS_HASH_BY_NAME[reservation[:departure]]
           rescue Mysql2::Error => e
-            puts e.message
+            puts e.full_message
             db_transaction_rollback
             halt_with_error 500, '予約情報に記載された列車の乗車駅データの取得に失敗しました'
           end
@@ -1009,7 +1009,7 @@ module Isutrain
           reserved_to_station = begin
             STATIONS_HASH_BY_NAME[reservation[:arrival]]
           rescue Mysql2::Error => e
-            puts e.message
+            puts e.full_message
             db_transaction_rollback
             halt_with_error 500, '予約情報に記載された列車の降車駅データの取得に失敗しました'
           end
@@ -1049,7 +1049,7 @@ module Isutrain
                 reservation[:reservation_id],
               )
             rescue Mysql2::Error => e
-              puts e.message
+              puts e.full_message
               db_transaction_rollback
               halt_with_error 500, '座席予約情報の取得に失敗しました'
             end
@@ -1128,7 +1128,7 @@ module Isutrain
           )
         rescue Mysql2::Error => e
           db_transaction_rollback
-          puts e.message
+          puts e.full_message
           halt_with_error 400, "予約の保存に失敗しました。 #{e.message}"
         end
 
@@ -1153,7 +1153,7 @@ module Isutrain
           )
         rescue Mysql2::Error => e
           db_transaction_rollback
-          puts e.message
+          puts e.full_message
           halt_with_error 500, '座席予約の登録に失敗しました'
         end
       rescue => e
@@ -1186,7 +1186,7 @@ module Isutrain
           ).first
         rescue Mysql2::Error => e
           db_transaction_rollback
-          puts e.message
+          puts e.full_message
           halt_with_error 500, '予約情報の取得に失敗しました'
         end
 
@@ -1247,7 +1247,7 @@ module Isutrain
           JSON.parse(res.body, symbolize_names: true)
         rescue JSON::ParserError => e
           db_transaction_rollback
-          puts e.message
+          puts e.full_message
           halt_with_error 500, 'JSON parseに失敗しました'
         end
 
@@ -1261,11 +1261,11 @@ module Isutrain
           )
         rescue Mysql2::Error => e
           db_transaction_rollback
-          puts e.message
+          puts e.full_message
           halt_with_error 500, '予約情報の更新に失敗しました'
         end
       rescue => e
-        puts e.message
+        puts e.full_message
         db_transaction_rollback
         halt_with_error 500, e.message
       end
@@ -1313,7 +1313,7 @@ module Isutrain
 
       message_response('registration complete')
     rescue Mysql2::Error => e
-      puts e.message
+      puts e.full_message
       halt_with_error 502, 'user registration failed'
     end
 
@@ -1414,7 +1414,7 @@ module Isutrain
         ).first
       rescue Mysql2::Error => e
         db_transaction_rollback
-        puts e.message
+        puts e.full_message
         halt_with_error 500, '予約情報の検索に失敗しました'
       end
 
@@ -1442,7 +1442,7 @@ module Isutrain
         )
       rescue Mysql2::Error => e
         db_transaction_rollback
-        puts e.message
+        puts e.full_message
         halt_with_error 500, e.message
       end
 
@@ -1453,7 +1453,7 @@ module Isutrain
         )
       rescue Mysql2::Error => e
         db_transaction_rollback
-        puts e.message
+        puts e.full_message
         halt_with_error 500, e.message
       end
 
