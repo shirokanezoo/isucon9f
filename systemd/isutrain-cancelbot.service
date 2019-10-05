@@ -1,0 +1,24 @@
+[Unit]
+Description = cancelbot
+
+[Service]
+Type=simple
+
+ExecStart=/home/isucon/git/isutrain/webapp/ruby/run.sh bundle exec ruby cancelbot.rb
+
+RuntimeDirectory=isutrain
+WorkingDirectory=/home/isucon/git/isutrain/webapp/ruby
+
+EnvironmentFile=/home/isucon/env.secret.sh
+EnvironmentFile=/home/isucon/git/env.sh
+
+User=isucon
+Group=isucon
+StandardOutput=file:/tmp/cancelbot.log
+StandardError=file:/tmp/cancelbot.log
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+# vim: ft=systemd

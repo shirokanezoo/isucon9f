@@ -1429,36 +1429,7 @@ module Isutrain
         halt_with_error 500, '何らかの理由により予約はRejected状態です'
       when 'done'
         # 支払いをキャンセルする
-        payment_api = ENV['PAYMENT_API'] || 'https://payment041.isucon9.hinatan.net/'
-
-        uri = URI.parse("#{payment_api}/payment/#{reservation[:payment_id]}")
-        req = Net::HTTP::Delete.new(uri)
-        req.body = {
-          payment_id: reservation[:payment_id]
-        }.to_json
-        req['Content-Type'] = 'application/json'
-
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = uri.scheme == 'https'
-        res = http.start { http.request(req) }
-
-        # リクエスト失敗
-        if res.code != '200'
-          db_transaction_rollback
-          puts res.code
-          halt_with_error 500, '決済に失敗しました。支払いIDが間違っている可能性があります'
-        end
-
-        # リクエスト取り出し
-        output = begin
-          JSON.parse(res.body, symbolize_names: true)
-        rescue JSON::ParserError => e
-          db_transaction_rollback
-          puts e.message
-          halt_with_error 500, 'JSON parseに失敗しました'
-        end
-
-        puts output
+        m.lpush('isutrain:cancel_queue', reservation[:payment_id])
       else
         # pass
       end
