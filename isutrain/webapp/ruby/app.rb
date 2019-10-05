@@ -429,7 +429,6 @@ module Isutrain
           elsif premium_avail_seats.length < 10
             premium_avail = '△'
           end
-          premium_avail = '－'
 
           premium_smoke_avail = '○'
           if premium_smoke_avail_seats.length.zero?
@@ -437,7 +436,6 @@ module Isutrain
           elsif premium_smoke_avail_seats.length < 10
             premium_smoke_avail = '△'
           end
-          premium_smoke_avail = '－'
 
           reserved_avail = '○'
           if reserved_avail_seats.length.zero?
@@ -445,7 +443,6 @@ module Isutrain
           elsif reserved_avail_seats.length < 10
             reserved_avail = '△'
           end
-          reserved_avail = '－'
 
           reserved_smoke_avail = '○'
           if reserved_smoke_avail_seats.length.zero?
@@ -453,7 +450,6 @@ module Isutrain
           elsif reserved_smoke_avail_seats.length < 10
             reserved_smoke_avail = '△'
           end
-          reserved_smoke_avail = '－'
 
           # 空席情報
           seat_availability = {
