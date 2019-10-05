@@ -57,6 +57,15 @@ module Isutrain
     class Error < StandardError; end
     class ErrorNoRows < StandardError; end
 
+    EXPEDITOR = Expeditor::Service.new(
+      executor: Concurrent::ThreadPoolExecutor.new(
+        min_threads: 32,
+        max_threads: 32,
+        max_queue: 100,
+      )
+    )
+
+
     configure :development do
       require 'sinatra/reloader'
 

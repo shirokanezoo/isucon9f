@@ -8,6 +8,8 @@ gem 'newrelic_rpm'
 
 gem 'stackprof', git: 'https://github.com/osyoyu/stackprof'
 
+gem 'expeditor'
+
 gem 'redis'
 gem 'hiredis'
 
