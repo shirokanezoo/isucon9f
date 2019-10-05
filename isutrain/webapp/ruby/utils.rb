@@ -45,32 +45,48 @@ module Isutrain
         `reservations`.`train_name` = ?
 __EOF
 
+
       if train[:is_nobori]
-        query = "#{query} AND (`reservations`.`arrival_id` < ? AND ? <= `reservations`.`departure_id`)\nUNION #{query} AND (`reservations`.`arrival_id` < ? AND ? <= `reservations`.`departure_id`)\nUNION #{query} AND (? < `reservations`.`arrival_id` AND `reservations`.`departure_id` < ?)"
+        nobori_conditions = [
+          '(`reservations`.`arrival_id` < ? AND ? <= `reservations`.`departure_id`)',
+          '(`reservations`.`arrival_id` < ? AND ? <= `reservations`.`departure_id`)',
+          '(? < `reservations`.`arrival_id` AND `reservations`.`departure_id` < ?)',
+        ]
       else
-        query = "#{query} AND (`reservations`.`departure_id` <= ? AND ? < `reservations`.`arrival_id`)\nUNION #{query} AND (`reservations`.`departure_id` <= ? AND ? < `reservations`.`arrival_id`)\nUNION #{query} AND (`reservations`.`arrival_id` < ? AND ? < `reservations`.`departure_id`)"
+        nobori_conditions = [
+          '(`reservations`.`arrival_id` < ? AND ? <= `reservations`.`departure_id`)',
+          '(`reservations`.`arrival_id` < ? AND ? <= `reservations`.`departure_id`)',
+          '(? < `reservations`.`arrival_id` AND `reservations`.`departure_id` < ?)',
+        ]
       end
 
-      placeholders = [
-        car_number,
-        date.strftime('%Y/%m/%d'),
-        train[:train_class],
-        train[:train_name],
-      ]
-      db.xquery(
-        query,
-        *placeholders,
-        from_station[:id],
-        from_station[:id],
-        *placeholders,
-        to_station[:id],
-        to_station[:id],
-        *placeholders,
-        from_station[:id],
-        to_station[:id],
-      ).map do |_|
-        ["#{seat_reservation[:seat_row]}\0#{seat_reservation[:seat_column]}", true]
-      end.to_h
+      result = {}
+      [
+        [
+          from_station[:id],
+          from_station[:id],
+        ],
+        [
+          to_station[:id],
+          to_station[:id],
+        ],
+        [
+          from_station[:id],
+          to_station[:id],
+        ],
+      ].zip(nobori_conditions) do |(placeholders, condition)|
+        db.xquery(
+          "#{query} AND #{condition}",
+          car_number,
+          date.strftime('%Y/%m/%d'),
+          train[:train_class],
+          train[:train_name],
+          *placeholders,
+        ).each do |_|
+          result["#{seat_reservation[:seat_row]}\0#{seat_reservation[:seat_column]}"] = true
+        end
+      end
+      result
     end
 
     def get_available_seats(train, from_station, to_station, seat_class, is_smoking_seat)
