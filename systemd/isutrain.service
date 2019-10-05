@@ -1,0 +1,24 @@
+[Unit]
+Description = isutrain
+
+[Service]
+Type=simple
+
+ExecStart=/home/isucon/git/webapp/ruby/run.sh
+
+RuntimeDirectory=isutrain
+WorkingDirectory=/home/isucon/git/isutrain/webapp/ruby
+
+EnvironmentFile=/home/isucon/env.secret.sh
+EnvironmentFile=/home/isucon/git/env.sh
+
+User=isucon
+Group=isucon
+StandardOutput=file:/tmp/isu-rack.systemd.log
+StandardError=file:/tmp/isu-rack.systemd.log
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+# vim: ft=systemd
