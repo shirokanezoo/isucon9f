@@ -8,6 +8,11 @@ if [ "_${selfsum}" != "_$(openssl dgst -sha256 "$0")" ]; then
   exec $0
 fi
 
+(
+  cd ~/git/isutrain/webapp/ruby
+  bundle exec stackprof --d3-flamegraph app.rb /run/isutrain/stackprof/* > ~isucon/public_html/stackprof.html
+) || :
+
 sudo cp ~/git/systemd/* /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl restart isutrain.service
