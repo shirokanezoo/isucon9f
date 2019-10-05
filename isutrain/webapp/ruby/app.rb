@@ -1118,7 +1118,7 @@ module Isutrain
         # reservationsレコード1に対してseat_reservationstが1以上登録される
         body_params[:seats].each do |v|
           db.xquery(
-            'INSERT INTO `seat_reservations` (`reservation_id`, `car_number`, `seat_row`, `seat_column`, `date`, `train_class`, `train_name`) VALUES (?, ?, ?, ?)',
+            'INSERT INTO `seat_reservations` (`reservation_id`, `car_number`, `seat_row`, `seat_column`, `date`, `train_class`, `train_name`) VALUES (?, ?, ?, ?, ?, ?, ?)',
             id,
             body_params[:car_number],
             v[:row],
