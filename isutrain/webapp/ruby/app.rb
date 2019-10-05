@@ -757,7 +757,7 @@ module Isutrain
 
                 seat_reservation_list = begin
                   db.xquery(
-                    'SELECT `s`.* FROM `seat_reservations` `s`, `reservations` `r` WHERE `r`.`date` = ? AND `r`.`train_class` = ? AND `r`.`train_name` = ? AND `car_number` = ? AND `seat_row` = ? AND `seat_column` = ? FOR UPDATE',
+                    'SELECT * FROM `seat_reservations` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ? AND `car_number` = ? AND `seat_row` = ? AND `seat_column` = ? FOR UPDATE',
                     date.strftime('%Y/%m/%d'),
                     seat[:train_class],
                     body_params[:train_name],
