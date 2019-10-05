@@ -24,6 +24,6 @@ sudo nginx -s reload || :
   export RACK_ENV=production
   export NEW_RELIC_LICENSE_KEY
   bundle exec newrelic deployment -r "$(git rev-parse HEAD)"
-)
+) || :
 
 sudo bash -c 'cp /var/log/nginx/access.log /var/log/nginx/access.log.$(date +%s) && echo > /var/log/nginx/access.log; echo > /tmp/isu-query.log; echo > /tmp/isu-rack.log; test -d /tmp/stackprof && rm -f /tmp/stackprof/*; echo > /var/lib/mysql/mysql-slow.log; chown isucon:isucon /tmp/isu*.log'
