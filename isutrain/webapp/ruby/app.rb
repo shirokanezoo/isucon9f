@@ -1163,18 +1163,21 @@ __EOF
         # 予約ID発行と予約情報登録
         begin
           db.xquery(
-            'INSERT INTO `reservations` (`user_id`, `date`, `train_class`, `train_name`, `departure`, `arrival`, `status`, `payment_id`, `adult`, `child`, `amount`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO `reservations` (`user_id`, `date`, `train_class`, `train_name`, `departure`, `arrival`, `status`, `payment_id`, `adult`, `child`, `amount`, `arrival_id`, `departure_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             user[:id],
             date.strftime('%Y/%m/%d'),
             body_params[:train_class],
             body_params[:train_name],
-            body_params[:departure],
-            body_params[:arrival],
+            from_station[:name],
+            to_station[:name],
             'requesting',
             'a',
             body_params[:adult],
             body_params[:child],
             sum_fare,
+            from_station[:id],
+            to_station[:id],
+
           )
         rescue Mysql2::Error => e
           db.query('ROLLBACK')
