@@ -1003,8 +1003,9 @@ __EOF
         end
 
         reservations = begin
+          skip_locked = ENV['RACK_ENV'] == 'development' ? '' : 'SKIP LOCKED'
           db.xquery(
-            'SELECT * FROM `reservations` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ? FOR UPDATE SKIP LOCKED',
+            "SELECT * FROM `reservations` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ? FOR UPDATE #{skip_locked}",
             date.strftime('%Y/%m/%d'),
             body_params[:train_class],
             body_params[:train_name],
