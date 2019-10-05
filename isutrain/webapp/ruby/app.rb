@@ -761,12 +761,9 @@ module Isutrain
                 date.strftime('%Y/%m/%d'),
                 body_params[:train_class],
                 body_params[:train_name],
-              ).map do |rev|
-                [
-                  "#{rev[:car_number]}-#{rev[:seat_row]}-#{rev[:seat_column]}",
-                  rev
-                ]
-              end.to_h
+              ).group_by do |rev|
+                "#{rev[:car_number]}-#{rev[:seat_row]}-#{rev[:seat_column]}"
+              end
             rescue Mysql2::Error => e
               db_transaction_rollback
               puts e.message
@@ -947,7 +944,6 @@ module Isutrain
 
             seat_list = begin
               (Isutrain.get_seats(body_params[:train_class],body_params[:car_number]) || []).select do |seat|
-                pp seat
                 seat[:seat_row] == z[:row].to_i && seat[:seat_column] == z[:column] && seat[:seat_class] == body_params[:seat_class]
               end
             rescue Mysql2::Error => e
