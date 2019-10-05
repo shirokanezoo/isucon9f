@@ -12,6 +12,8 @@ require 'new_relic/agent/tracer'
 
 require './utils'
 require './station'
+require './distance_fare_master'
+require './fare_master'
 
 class Mysql2ClientWithNewRelic < Mysql2::Client
   def initialize(*args)
@@ -95,14 +97,10 @@ module Isutrain
       end
 
       def get_distance_fare(orig_to_dest_distance)
-        distance_fare_list = db.query(
-          'SELECT `distance`, `fare` FROM `distance_fare_master` ORDER BY `distance`',
-        )
-
         last_distance = 0.0
         last_fare = 0
 
-        distance_fare_list.each do |distance_fare|
+        DISTANCE_FARE_MASTER.each do |distance_fare|
           puts "#{orig_to_dest_distance} #{distance_fare[:distance]} #{distance_fare[:fare]}"
 
           break if last_distance < orig_to_dest_distance && orig_to_dest_distance < distance_fare[:distance]
@@ -132,13 +130,8 @@ module Isutrain
         puts "distFare #{dist_fare}"
 
         # 期間・車両・座席クラス倍率
-        fare_list = db.xquery(
-          'SELECT * FROM `fare_master` WHERE `train_class` = ? AND `seat_class` = ? ORDER BY `start_date`',
-          train_class,
-          seat_class,
-        )
-
-        raise Error, 'fare_master does not exists' if fare_list.to_a.length.zero?
+        fare_list = FARE_MASTER_BY_CLASS["#{train_class}\0#{seat_class}"]
+        raise Error, 'fare_master does not exists' unless fare_list
 
         selected_fare = fare_list.first
 
