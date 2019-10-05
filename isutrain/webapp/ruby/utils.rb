@@ -6,6 +6,7 @@ module Isutrain
       local: '遅いやつ',
     }
     AVAILABLE_DAYS = 10
+    AVAILABLE_SEATS_CACHE_TIME = 1000 * 30
 
     def check_available_date(date)
       t = Time.new(2020, 1, 1, 0, 0, 0, '+09:00')
@@ -88,7 +89,7 @@ __EOF
       end
 
       count = available_seat_map.values.length
-      redis.psetex(key, 2000, count.to_s)
+      redis.psetex(key, AVAILABLE_SEATS_CACHE_TIME, count.to_s)
       count
     end
   end
