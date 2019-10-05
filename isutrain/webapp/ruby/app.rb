@@ -9,7 +9,6 @@ require 'mysql2-cs-bind'
 require 'redis'
 require 'hiredis'
 require 'expeditor'
-require 'newrelic_rpm'
 require 'redis'
 require 'hiredis'
 require 'new_relic/agent/method_tracer'
@@ -287,30 +286,6 @@ module Isutrain
 
         halt status, headers, response.to_json
       end
-    end
-
-    before do
-      @req_id = SecureRandom.uuid
-      if request.post?
-        begin
-          path = "/tmp/isu-params.log"
-          params = body_params.dup
-          params['uri'] = request.path_info
-          params['time'] = Time.now.strftime('%H%M%S%N')
-          params['user_id'] = session['user_id'] if session['user_id']
-          params['req_id'] = @req_id
-          File.open(path, 'a') do |f|
-            f.puts params.to_json
-          end
-        rescue
-        end
-      end
-    end
-
-    after do
-      response.headers['X-Isu-UserId'] = session['user_id'].to_s if session['user_id']
-      response.headers['X-Isu-Time'] = Time.now.strftime('%H%M%S%N')
-      response.headers['X-Isu-ReqId'] = @req_id
     end
 
     post '/initialize' do
