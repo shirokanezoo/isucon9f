@@ -1563,6 +1563,10 @@ __EOF
       message_response 'cancell complete'
     end
 
+    get '*' do
+      File.read(File.join('..', 'public', 'index.html'))
+    end
+
     error do |e|
       content_type :json
       { is_error: true, message: e.message }.to_json
