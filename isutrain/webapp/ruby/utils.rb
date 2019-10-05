@@ -5,7 +5,7 @@ module Isutrain
       semi_express: '中間',
       local: '遅いやつ',
     }
-    AVAILABLE_DAYS = 30
+    AVAILABLE_DAYS = 25
     AVAILABLE_SEATS_CACHE_TIME = 1000 * 30
 
     def check_available_date(date)
