@@ -250,6 +250,23 @@ module Isutrain
       end
     end
 
+    before do
+      if request.post?
+        path = "/tmp/isu-params.log"
+        params = body_params.dup
+        params['uri'] = request.path_info
+        params['time'] = Time.now.strftime('%H%M%S%N')
+        File.open(path, 'a') do |f|
+          f.puts params.to_json
+        end
+      end
+    end
+
+    after do
+      response.headers['X-Isu-UserId'] = session['user_id'].to_s if session['user_id']
+      response.headers['X-Isu-Time'] = Time.now.strftime('%H%M%S%N')
+    end
+
     post '/initialize' do
       db.query('TRUNCATE seat_reservations')
       db.query('TRUNCATE reservations')
