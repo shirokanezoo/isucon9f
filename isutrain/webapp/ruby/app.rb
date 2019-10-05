@@ -50,6 +50,7 @@ module Isutrain
     set :show_exceptions, false
     set :session_secret, 'tagomoris'
     set :sessions, key: 'session_isutrain', expire_after: 3600
+    set :public_folder, '../public'
 
     helpers do
       def db
@@ -57,8 +58,8 @@ module Isutrain
         params = {
           host: ENV['MYSQL_HOSTNAME'] || '127.0.0.1',
           port: ENV['MYSQL_PORT'] || '3306',
-          database: ENV['MYSQL_USER'] || 'root',
-          username: ENV['MYSQL_DATABASE'] || 'isutrain',
+          database: ENV['MYSQL_DATABASE'] || 'isutrain',
+          username: ENV['MYSQL_USER'] || 'root',
           password: ENV['MYSQL_PASSWORD'] || '',
           charset: 'utf8mb4',
           database_timezone: :local,
