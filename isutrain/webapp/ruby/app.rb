@@ -1030,12 +1030,7 @@ __EOF
 
           # train_masterから列車情報を取得(上り・下りが分かる)
           tmas = begin
-            db.xquery(
-              'SELECT * FROM `train_master` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ?',
-              date.strftime('%Y/%m/%d'),
-              body_params[:train_class],
-              body_params[:train_name],
-            ).first
+            Isutrain.get_train(date, body_params[:train_class], body_params[:train_name])
           rescue Mysql2::Error => e
             puts e.message
             db.query('ROLLBACK')
