@@ -68,9 +68,9 @@ module Isutrain
 __EOF
 
       if train[:is_nobori]
-        query += 'AND ((`sta`.`id` < ? AND ? <= `std`.`id`) OR (`sta`.`id` < ? AND ? <= `std`.`id`) OR (? < `sta`.`id` AND `std`.`id` < ?))'
+        query = "#{query} AND (`sta`.`id` < ? AND ? <= `std`.`id`)\nUNION #{query} AND (`sta`.`id` < ? AND ? <= `std`.`id`)\nUNION #{query} AND (? < `sta`.`id` AND `std`.`id` < ?)"
       else
-        query += 'AND ((`std`.`id` <= ? AND ? < `sta`.`id`) OR (`std`.`id` <= ? AND ? < `sta`.`id`) OR (`sta`.`id` < ? AND ? < `std`.`id`))'
+        query = "#{query} AND (`std`.`id` <= ? AND ? < `sta`.`id`)\nUNION #{query} AND (`std`.`id` <= ? AND ? < `sta`.`id`)\nUNION #{query} AND (`sta`.`id` < ? AND ? < `std`.`id`)"
       end
 
       seat_reservation_list = db.xquery(
@@ -92,3 +92,71 @@ __EOF
     end
   end
 end
+__END__
+
+SELECT
+`sr`.`reservation_id`,
+`sr`.`car_number`,
+`sr`.`seat_row`,
+`sr`.`seat_column`
+FROM
+`seat_reservations` `sr`,
+`reservations` `r`,
+`seat_master` `s`,
+`station_master` `std`,
+`station_master` `sta`
+WHERE
+`r`.`reservation_id` = `sr`.`reservation_id` AND
+`s`.`train_class` = `r`.`train_class` AND
+`s`.`car_number` = `sr`.`car_number` AND
+`s`.`seat_column` = `sr`.`seat_column` AND
+`s`.`seat_row` = `sr`.`seat_row` AND
+`std`.`name` = `r`.`departure` AND
+`sta`.`name` = `r`.`arrival`
+AND (`std`.`id` <= '43' AND '43' < `sta`.`id`)
+
+UNION
+
+SELECT
+`sr`.`reservation_id`,
+`sr`.`car_number`,
+`sr`.`seat_row`,
+`sr`.`seat_column`
+FROM
+`seat_reservations` `sr`,
+`reservations` `r`,
+`seat_master` `s`,
+`station_master` `std`,
+`station_master` `sta`
+WHERE
+`r`.`reservation_id` = `sr`.`reservation_id` AND
+`s`.`train_class` = `r`.`train_class` AND
+`s`.`car_number` = `sr`.`car_number` AND
+`s`.`seat_column` = `sr`.`seat_column` AND
+`s`.`seat_row` = `sr`.`seat_row` AND
+`std`.`name` = `r`.`departure` AND
+`sta`.`name` = `r`.`arrival`
+AND (`std`.`id` <= '55' AND '55' < `sta`.`id`)
+
+UNION
+
+SELECT
+`sr`.`reservation_id`,
+`sr`.`car_number`,
+`sr`.`seat_row`,
+`sr`.`seat_column`
+FROM
+`seat_reservations` `sr`,
+`reservations` `r`,
+`seat_master` `s`,
+`station_master` `std`,
+`station_master` `sta`
+WHERE
+`r`.`reservation_id` = `sr`.`reservation_id` AND
+`s`.`train_class` = `r`.`train_class` AND
+`s`.`car_number` = `sr`.`car_number` AND
+`s`.`seat_column` = `sr`.`seat_column` AND
+`s`.`seat_row` = `sr`.`seat_row` AND
+`std`.`name` = `r`.`departure` AND
+`sta`.`name` = `r`.`arrival`
+AND (`sta`.`id` < '43' AND '55' < `std`.`id`);
