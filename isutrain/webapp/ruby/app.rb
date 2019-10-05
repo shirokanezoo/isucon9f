@@ -252,12 +252,15 @@ module Isutrain
 
     before do
       if request.post?
-        path = "/tmp/isu-params.log"
-        params = body_params.dup
-        params['uri'] = request.path_info
-        params['time'] = Time.now.strftime('%H%M%S%N')
-        File.open(path, 'a') do |f|
-          f.puts params.to_json
+        begin
+          path = "/tmp/isu-params.log"
+          params = body_params.dup
+          params['uri'] = request.path_info
+          params['time'] = Time.now.strftime('%H%M%S%N')
+          File.open(path, 'a') do |f|
+            f.puts params.to_json
+          end
+        rescue
         end
       end
     end
