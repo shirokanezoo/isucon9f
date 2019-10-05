@@ -99,6 +99,28 @@ module Isutrain
         Thread.current[:db] = ENV['NEW_RELIC_AGENT_ENABLED'] ? Mysql2ClientWithNewRelic.new(params) : Mysql2::Client.new(params)
       end
 
+      def db_ensure_transaction_close
+        if Thread.current[:db_transaction] == :open
+          db_transaction_rollback
+        end
+      end
+
+      def db_transaction_begin
+        Thread.current[:db_transaction] = :open
+        db.query("BEGIN")
+      end
+
+      def db_transaction_commit
+        db.query("COMMIT")
+        Thread.current[:db_transaction] = nil
+      end
+
+      def db_transaction_rollback
+        db.query("ROLLBACK")
+        Thread.current[:db_transaction] = nil
+      end
+
+
       def redis
         Thread.current[:redis] ||= Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost'))
       end
@@ -590,19 +612,19 @@ module Isutrain
 
       halt_with_error 404, '予約可能期間外です' unless check_available_date(date)
 
-      db.query('BEGIN')
+      db_transaction_begin
 
       begin
         tmas = begin
           Isutrain.get_train(date, body_params[:train_class], body_params[:train_name])
         rescue Mysql2::Error => e
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts e.message
           halt_with_error 500, '列車データの取得に失敗しました'
         end
 
         if tmas.nil?
-          db.query('ROLLBACK')
+          db_transaction_rollback
           halt_with_error 404, '列車データがみつかりません'
         end
 
@@ -612,13 +634,13 @@ module Isutrain
         departure_station = begin
           STATIONS_HASH_BY_NAME.fetch(tmas[:start_station])
         rescue KeyError => e
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts e.message
           halt_with_error 500, 'リクエストされた列車の始発駅データの取得に失敗しました'
         end
 
         if departure_station.nil?
-          db.query('ROLLBACK')
+          db_transaction_rollback
           halt_with_error 404, 'リクエストされた列車の始発駅データがみつかりません'
         end
 
@@ -626,13 +648,13 @@ module Isutrain
         arrival_station = begin
           STATIONS_HASH_BY_NAME.fetch(tmas[:last_station])
         rescue KeyError => e
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts e.message
           halt_with_error 500, 'リクエストされた列車の終着駅データの取得に失敗しました'
         end
 
         if arrival_station.nil?
-          db.query('ROLLBACK')
+          db_transaction_rollback
           halt_with_error 404, 'リクエストされた列車の終着駅データがみつかりません'
         end
 
@@ -640,13 +662,13 @@ module Isutrain
         from_station = begin
           STATIONS_HASH_BY_NAME.fetch(body_params[:departure])
         rescue KeyError => e
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts e.message
           halt_with_error 500, '乗車駅データの取得に失敗しました'
         end
 
         if from_station.nil?
-          db.query('ROLLBACK')
+          db_transaction_rollback
           halt_with_error 404, "乗車駅データがみつかりません #{body_params[:departure]}"
         end
 
@@ -654,56 +676,56 @@ module Isutrain
         to_station = begin
           STATIONS_HASH_BY_NAME.fetch(body_params[:arrival])
         rescue KeyError => e
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts e.message
           halt_with_error 500, '降車駅駅データの取得に失敗しました'
         end
 
         if to_station.nil?
-          db.query('ROLLBACK')
+          db_transaction_rollback
           halt_with_error 404, "降車駅駅データがみつかりません #{body_params[:arrival]}"
         end
 
         case body_params[:train_class]
         when '最速'
           if !from_station[:is_stop_express] || !to_station[:is_stop_express]
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 400, '最速の止まらない駅です'
           end
         when '中間'
           if !from_station[:is_stop_semi_express] || !to_station[:is_stop_semi_express]
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 400, '中間の止まらない駅です'
           end
         when '遅いやつ'
           if !from_station[:is_stop_local] || !to_station[:is_stop_local]
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 400, '遅いやつの止まらない駅です'
           end
         else
-          db.query('ROLLBACK')
+          db_transaction_rollback
           halt_with_error 400, 'リクエストされた列車クラスが不明です'
         end
 
         # 運行していない区間を予約していないかチェックする
         if tmas[:is_nobori]
           if from_station[:id] > departure_station[:id] || to_station[:id] > departure_station[:id]
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 400, 'リクエストされた区間に列車が運行していない区間が含まれています'
           end
 
           if arrival_station[:id] >= from_station[:id] || arrival_station[:id] > to_station[:id]
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 400, 'リクエストされた区間に列車が運行していない区間が含まれています'
           end
         else
           if from_station[:id] < departure_station[:id] || to_station[:id] < departure_station[:id]
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 400, 'リクエストされた区間に列車が運行していない区間が含まれています'
           end
 
           if arrival_station[:id] <= from_station[:id] || arrival_station[:id] < to_station[:id]
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 400, 'リクエストされた区間に列車が運行していない区間が含まれています'
           end
         end
@@ -715,13 +737,13 @@ module Isutrain
             train = begin
               Isutrain.get_train(date, body_params[:train_class], body_params[:train_name])
             rescue Mysql2::Error => e
-              db.query('ROLLBACK')
+              db_transaction_rollback
               puts e.message
               halt_with_error 400, e.message
             end
 
             if train.nil?
-              db.query('ROLLBACK')
+              db_transaction_rollback
               halt_with_error 404, 'train is not found'
             end
 
@@ -729,7 +751,7 @@ module Isutrain
             unless usable_train_class_list.include?(train[:train_class])
               err = 'invalid train_class'
               puts err
-              db.query('ROLLBACK')
+              db_transaction_rollback
               halt_with_error 400, err
             end
 
@@ -740,7 +762,7 @@ module Isutrain
                   s[:seat_class] == body_params[:seat_class] && s[:is_smoking_seat] == !!body_params[:is_smoking_seat]
                 end
               rescue Mysql2::Error => e
-                db.query('ROLLBACK')
+                db_transaction_rollback
                 puts e.message
                 halt_with_error 400, e.message
               end
@@ -766,7 +788,7 @@ module Isutrain
                     seat[:seat_column],
                   )
                 rescue Mysql2::Error => e
-                  db.query('ROLLBACK')
+                  db_transaction_rollback
                   puts e.message
                   halt_with_error 400, e.message
                 end
@@ -778,39 +800,39 @@ module Isutrain
                       seat_reservation[:reservation_id],
                     ).first
                   rescue Mysql2::Error => e
-                    db.query('ROLLBACK')
+                    db_transaction_rollback
                     puts e.message
                     halt_with_error 400, e.message
                   end
 
                   if reservation.nil?
-                    db.query('ROLLBACK')
+                    db_transaction_rollback
                     halt_with_error 404, 'reservation is not found'
                   end
 
                   departure_station = begin
                     STATIONS_HASH_BY_NAME[reservation[:departure]]
                   rescue Mysql2::Error => e
-                    db.query('ROLLBACK')
+                    db_transaction_rollback
                     puts e.message
                     halt_with_error 400, e.message
                   end
 
                   if departure_station.nil?
-                    db.query('ROLLBACK')
+                    db_transaction_rollback
                     halt_with_error 404, 'departure_station is not found'
                   end
 
                   arrival_station = begin
                     STATIONS_HASH_BY_NAME[reservation[:arrival]]
                   rescue Mysql2::Error => e
-                    db.query('ROLLBACK')
+                    db_transaction_rollback
                     puts e.message
                     halt_with_error 400, e.message
                   end
 
                   if arrival_station.nil?
-                    db.query('ROLLBACK')
+                    db_transaction_rollback
                     halt_with_error 404, 'arrival_station is not found'
                   end
 
@@ -904,7 +926,7 @@ module Isutrain
             end
 
             if body_params[:seats].length.zero?
-              db.query('ROLLBACK')
+              db_transaction_rollback
               halt_with_error 404, 'あいまい座席予約ができませんでした。指定した席、もしくは1車両内に希望の席数をご用意できませんでした。'
             end
           end
@@ -924,12 +946,12 @@ module Isutrain
               )
             rescue Mysql2::Error => e
               puts e.message
-              db.query('ROLLBACK')
+              db_transaction_rollback
               halt_with_error 400, e.message
             end
 
             if seat_list.to_a.empty?
-              db.query('ROLLBACK')
+              db_transaction_rollback
               halt_with_error 404, 'リクエストされた座席情報は存在しません。号車・喫煙席・座席クラスなど組み合わせを見直してください'
             end
           end
@@ -944,7 +966,7 @@ module Isutrain
           )
         rescue Mysql2::Error => e
           puts e.message
-          db.query('ROLLBACK')
+          db_transaction_rollback
           halt_with_error 500, '列車予約情報の取得に失敗しました'
         end
 
@@ -956,12 +978,12 @@ module Isutrain
             Isutrain.get_train(date, body_params[:train_class], body_params[:train_name])
           rescue Mysql2::Error => e
             puts e.message
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 500, '列車データの取得に失敗しました'
           end
 
           if tmas.nil?
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 404, '列車データがみつかりません'
           end
 
@@ -972,12 +994,12 @@ module Isutrain
             STATIONS_HASH_BY_NAME[reservation[:departure]]
           rescue Mysql2::Error => e
             puts e.message
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 500, '予約情報に記載された列車の乗車駅データの取得に失敗しました'
           end
 
           if reserved_from_station.nil?
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 404, '予約情報に記載された列車の乗車駅データがみつかりません'
           end
 
@@ -986,12 +1008,12 @@ module Isutrain
             STATIONS_HASH_BY_NAME[reservation[:arrival]]
           rescue Mysql2::Error => e
             puts e.message
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 500, '予約情報に記載された列車の降車駅データの取得に失敗しました'
           end
 
           if reserved_to_station.nil?
-            db.query('ROLLBACK')
+            db_transaction_rollback
             halt_with_error 404, '予約情報に記載された列車の降車駅データがみつかりません'
           end
 
@@ -1026,14 +1048,14 @@ module Isutrain
               )
             rescue Mysql2::Error => e
               puts e.message
-              db.query('ROLLBACK')
+              db_transaction_rollback
               halt_with_error 500, '座席予約情報の取得に失敗しました'
             end
 
             seat_reservations.each do |v|
               body_params[:seats].each do |seat|
                 if v[:car_number] == body_params[:car_number] && v[:seat_row] == seat[:row] && v[:seat_column] == seat[:column]
-                  db.query('ROLLBACK')
+                  db_transaction_rollback
                   puts "Duplicated #{reservation}"
                   halt_with_error 400, 'リクエストに既に予約された席が含まれています'
                 end
@@ -1066,7 +1088,7 @@ module Isutrain
             raise Error, 'リクエストされた座席クラスが不明です'
           end
         rescue Error, ErrorNoRows => e
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts "fareCalc #{e.message}"
           halt_with_error 400, e.message
         end
@@ -1078,7 +1100,7 @@ module Isutrain
         user, status, message = get_user
 
         if status != 200
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts message
           halt_with_error status, message
         end
@@ -1103,14 +1125,14 @@ module Isutrain
 
           )
         rescue Mysql2::Error => e
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts e.message
           halt_with_error 400, "予約の保存に失敗しました。 #{e.message}"
         end
 
         id = db.last_id # 予約ID
         if id.nil?
-          db.query('ROLLBACK')
+          db_transaction_rollback
           halt_with_error 500, '予約IDの取得に失敗しました'
         end
 
@@ -1128,13 +1150,13 @@ module Isutrain
             body_params[:train_name],
           )
         rescue Mysql2::Error => e
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts e.message
           halt_with_error 500, '座席予約の登録に失敗しました'
         end
       rescue => e
         puts e.message
-        db.query('ROLLBACK')
+        db_transaction_rollback
         halt_with_error 500, e.message
       end
 
@@ -1144,14 +1166,16 @@ module Isutrain
         is_ok: true
       }
 
-      db.query('COMMIT')
+      db_transaction_commit
 
       content_type :json
       response.to_json
+    ensure
+      db_ensure_transaction_close
     end
 
     post '/api/train/reservation/commit' do
-      db.query('BEGIN')
+      db_transaction_begin
 
       begin
         # 予約IDで検索
@@ -1161,13 +1185,13 @@ module Isutrain
             body_params[:reservation_id],
           ).first
         rescue Mysql2::Error => e
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts e.message
           halt_with_error 500, '予約情報の取得に失敗しました'
         end
 
         if reservation.nil?
-          db.query('ROLLBACK')
+          db_transaction_rollback
           halt_with_error 404, '予約情報がみつかりません'
         end
 
@@ -1175,19 +1199,19 @@ module Isutrain
         user, status, message = get_user
 
         if status != 200
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts message
           halt_with_error status, message
         end
 
         if reservation[:user_id] != user[:id]
-          db.query('ROLLBACK')
+          db_transaction_rollback
           halt_with_error 403, '他のユーザIDの支払いはできません'
         end
 
         # 予約情報の支払いステータス確認
         if reservation[:status] == 'done'
-          db.query('ROLLBACK')
+          db_transaction_rollback
           halt_with_error 403, '既に支払いが完了している予約IDです'
         end
 
@@ -1213,7 +1237,7 @@ module Isutrain
 
         # リクエスト失敗
         if res.code != '200'
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts res.code
           halt_with_error 500, '決済に失敗しました。カードトークンや支払いIDが間違っている可能性があります'
         end
@@ -1222,7 +1246,7 @@ module Isutrain
         output = begin
           JSON.parse(res.body, symbolize_names: true)
         rescue JSON::ParserError => e
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts e.message
           halt_with_error 500, 'JSON parseに失敗しました'
         end
@@ -1236,13 +1260,13 @@ module Isutrain
             body_params[:reservation_id],
           )
         rescue Mysql2::Error => e
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts e.message
           halt_with_error 500, '予約情報の更新に失敗しました'
         end
       rescue => e
         puts e.message
-        db.query('ROLLBACK')
+        db_transaction_rollback
         halt_with_error 500, e.message
       end
 
@@ -1250,10 +1274,12 @@ module Isutrain
         is_ok: true
       }
 
-      db.query('COMMIT')
+      db_transaction_commit
 
       content_type :json
       rr.to_json
+    ensure
+      db_ensure_transaction_close
     end
 
     get '/api/auth' do
@@ -1378,7 +1404,7 @@ module Isutrain
         halt_with_error 400, 'incorrect item id'
       end
 
-      db.query('BEGIN')
+      db_transaction_begin
 
       reservation = begin
         db.xquery(
@@ -1387,19 +1413,19 @@ module Isutrain
           user[:id],
         ).first
       rescue Mysql2::Error => e
-        db.query('ROLLBACK')
+        db_transaction_rollback
         puts e.message
         halt_with_error 500, '予約情報の検索に失敗しました'
       end
 
       if reservation.nil?
-        db.query('ROLLBACK')
+        db_transaction_rollback
         halt_with_error 404, 'reservations naiyo'
       end
 
       case reservation[:status]
       when 'rejected'
-        db.query('ROLLBACK')
+        db_transaction_rollback
         halt_with_error 500, '何らかの理由により予約はRejected状態です'
       when 'done'
         # 支払いをキャンセルする
@@ -1418,7 +1444,7 @@ module Isutrain
 
         # リクエスト失敗
         if res.code != '200'
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts res.code
           halt_with_error 500, '決済に失敗しました。支払いIDが間違っている可能性があります'
         end
@@ -1427,7 +1453,7 @@ module Isutrain
         output = begin
           JSON.parse(res.body, symbolize_names: true)
         rescue JSON::ParserError => e
-          db.query('ROLLBACK')
+          db_transaction_rollback
           puts e.message
           halt_with_error 500, 'JSON parseに失敗しました'
         end
@@ -1444,7 +1470,7 @@ module Isutrain
           user[:id],
         )
       rescue Mysql2::Error => e
-        db.query('ROLLBACK')
+        db_transaction_rollback
         puts e.message
         halt_with_error 500, e.message
       end
@@ -1455,14 +1481,16 @@ module Isutrain
           item_id,
         )
       rescue Mysql2::Error => e
-        db.query('ROLLBACK')
+        db_transaction_rollback
         puts e.message
         halt_with_error 500, e.message
       end
 
-      db.query('COMMIT')
+      db_transaction_commit
 
       message_response 'cancell complete'
+    ensure
+      db_ensure_transaction_close
     end
 
     get '*' do
