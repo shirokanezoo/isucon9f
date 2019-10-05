@@ -40,9 +40,9 @@ module Isutrain
         `reservations` ON `reservations`.`reservation_id` = `seat_reservations`.`reservation_id`
       WHERE
         `seat_reservations`.`car_number` = ? AND
-        `reservations`.`date` = ? AND
-        `reservations`.`train_class` = ? AND
-        `reservations`.`train_name` = ?
+        `seat_reservations`.`date` = ? AND
+        `seat_reservations`.`train_class` = ? AND
+        `seat_reservations`.`train_name` = ?
 __EOF
 
 
