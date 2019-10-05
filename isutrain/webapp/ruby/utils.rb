@@ -32,13 +32,7 @@ module Isutrain
       # 指定種別の空き座席を返す
 
       # 全ての座席を取得する
-      seat_list = db.xquery(
-        'SELECT * FROM `seat_master` WHERE `train_class` = ? AND `seat_class` = ? AND `is_smoking_seat` = ?',
-        train[:train_class],
-        seat_class,
-        is_smoking_seat,
-      )
-
+      seat_list = SEAT_MASTER_BY_CLASS.fetch("#{train[:train_class]}\0#{seat_class}\0#{is_smoking_seat}")
       available_seat_map = {}
       seat_list.each do |seat|
         key = "#{seat[:car_number]}_#{seat[:seat_row]}_#{seat[:seat_column]}"
