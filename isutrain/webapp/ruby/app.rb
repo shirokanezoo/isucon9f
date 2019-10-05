@@ -637,12 +637,7 @@ __EOF
 
       begin
         tmas = begin
-          db.xquery(
-            'SELECT * FROM `train_master` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ?',
-            date.strftime('%Y/%m/%d'),
-            body_params[:train_class],
-            body_params[:train_name],
-          ).first
+          Isutrain.get_train(date, body_params[:train_class], body_params[:train_name])
         rescue Mysql2::Error => e
           db.query('ROLLBACK')
           puts e.message
@@ -761,12 +756,7 @@ __EOF
         if body_params[:seats].empty?
           if body_params[:seat_class] != 'non-reserved'
             train = begin
-              db.xquery(
-                'SELECT * FROM `train_master` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ?',
-                date.strftime('%Y/%m/%d'),
-                body_params[:train_class],
-                body_params[:train_name],
-              ).first
+              Isutrain.get_train(date, body_params[:train_class], body_params[:train_name])
             rescue Mysql2::Error => e
               db.query('ROLLBACK')
               puts e.message
@@ -789,13 +779,9 @@ __EOF
             body_params[:seats] = [] # 座席リクエスト情報は空に
             (1..16).each do |carnum|
               seat_list = begin
-                db.xquery(
-                  'SELECT * FROM `seat_master` WHERE `train_class` = ? AND `car_number` = ? AND `seat_class` = ? AND `is_smoking_seat` = ? ORDER BY `seat_row`, `seat_column`',
-                  body_params[:train_class],
-                  carnum,
-                  body_params[:seat_class],
-                  !!body_params[:is_smoking_seat],
-                )
+                Isutrain.get_seats(body_params[:train_class], carnum).select do |s|
+                  s[:seat_class] == body_params[:seat_class] && s[:is_smoking_seat] == !!body_params[:is_smoking_seat]
+                end
               rescue Mysql2::Error => e
                 db.query('ROLLBACK')
                 puts e.message
