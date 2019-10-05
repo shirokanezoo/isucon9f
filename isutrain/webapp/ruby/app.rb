@@ -265,6 +265,25 @@ module Isutrain
       }.to_json
     end
 
+    get '/api/dump' do
+      %w[
+        distance_fare_master
+        fare_master
+        seat_master
+        station_master
+        train_master
+      ].each do |table|
+        rows = db.xquery("SELECT * FROM #{table}")
+        code = [
+          "module Isutrain",
+          "  #{table.upcase} =",
+          rows.map { |row| row }.pretty_inspect,
+          "end",
+        ].join("\n");
+        File.write("#{table}.rb", code)
+      end
+    end
+
     get '/api/settings' do
       payment_api = ENV['PAYMENT_API'] || 'https://payment041.isucon9.hinatan.net/'
 
