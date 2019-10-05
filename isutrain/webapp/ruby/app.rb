@@ -267,19 +267,15 @@ module Isutrain
 
     get '/api/dump' do
       %w[
-        distance_fare_master
-        fare_master
-        seat_master
-        station_master
         train_master
       ].each do |table|
         rows = db.xquery("SELECT * FROM #{table}")
         code = [
           "module Isutrain",
-          "  #{table.upcase} =",
-          rows.map { |row| row }.pretty_inspect,
+          "  #{table.upcase} = Marshal.load(File.read('#{table}.bin')) ",
           "end",
         ].join("\n");
+        File.write("#{table}.bin", Marshal.dump(rows.map { |row| row }))
         File.write("#{table}.rb", code)
       end
     end
