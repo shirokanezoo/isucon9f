@@ -1118,11 +1118,14 @@ module Isutrain
         # reservationsレコード1に対してseat_reservationstが1以上登録される
         body_params[:seats].each do |v|
           db.xquery(
-            'INSERT INTO `seat_reservations` (`reservation_id`, `car_number`, `seat_row`, `seat_column`) VALUES (?, ?, ?, ?)',
+            'INSERT INTO `seat_reservations` (`reservation_id`, `car_number`, `seat_row`, `seat_column`, `date`, `train_class`, `train_name`) VALUES (?, ?, ?, ?)',
             id,
             body_params[:car_number],
             v[:row],
             v[:column],
+            date.strftime('%Y/%m/%d'),
+            body_params[:train_class],
+            body_params[:train_name],
           )
         rescue Mysql2::Error => e
           db.query('ROLLBACK')
