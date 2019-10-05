@@ -33,9 +33,9 @@ module Isutrain
         Thread.current[:db] ||= Mysql2::Client.new(
           host: ENV['MYSQL_HOSTNAME'] || '127.0.0.1',
           port: ENV['MYSQL_PORT'] || '3306',
-          database: ENV['MYSQL_USER'] || 'isutrain',
+          database: ENV['MYSQL_USER'] || 'root',
           username: ENV['MYSQL_DATABASE'] || 'isutrain',
-          password: ENV['MYSQL_PASSWORD'] || 'isutrain',
+          password: ENV['MYSQL_PASSWORD'] || '',
           charset: 'utf8mb4',
           database_timezone: :local,
           cast_booleans: true,
