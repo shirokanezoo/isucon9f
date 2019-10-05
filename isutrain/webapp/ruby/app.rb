@@ -6,8 +6,31 @@ require 'securerandom'
 require 'sinatra/base'
 require 'mysql2'
 require 'mysql2-cs-bind'
+require 'new_relic/agent/method_tracer'
+require 'new_relic/agent/tracer'
 
 require './utils'
+
+class Mysql2ClientWithNewRelic < Mysql2::Client
+  def initialize(*args)
+    super
+  end
+
+  def query(sql, *args)
+    if ENV['LOCAL']
+      puts sql
+      puts caller(0)[1]
+    end
+    callback = -> (result, metrics, elapsed) do
+      NewRelic::Agent::Datastores.notice_sql(sql, metrics, elapsed)
+    end
+    op = sql[/^(select|insert|update|delete|begin|commit|rollback)/i] || 'other'
+    table = sql[/\bcategories|configs|items|shippings|transaction_evidences|users|user_stats\b/] || 'other'
+    NewRelic::Agent::Datastores.wrap('MySQL', op, table, callback) do
+      super
+    end
+  end
+end
 
 module Isutrain
   class App < Sinatra::Base
@@ -30,7 +53,8 @@ module Isutrain
 
     helpers do
       def db
-        Thread.current[:db] ||= Mysql2::Client.new(
+        return Thread.current[:db] if Thread.current[:db]  
+        params = {
           host: ENV['MYSQL_HOSTNAME'] || '127.0.0.1',
           port: ENV['MYSQL_PORT'] || '3306',
           database: ENV['MYSQL_USER'] || 'root',
@@ -42,6 +66,7 @@ module Isutrain
           symbolize_keys: true,
           reconnect: true,
         )
+        Thread.current[:db] = ENV['NEW_RELIC_AGENT_ENABLED'] ? Mysql2ClientWithNewRelic.new(params) : Mysql2::Client.new(params)
       end
 
       def get_user
