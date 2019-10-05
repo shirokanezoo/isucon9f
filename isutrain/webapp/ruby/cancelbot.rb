@@ -6,7 +6,7 @@ payment_api = ENV['PAYMENT_API'] || 'https://payment041.isucon9.hinatan.net/'
 uri = URI.parse("#{payment_api}/payment/_bulk")
 
 loop do
-  payment_ids = redis.multi do |m|
+  payment_ids = @redis.multi do |m|
     m.lrange('isutrain:cancel_queue', 0, -1)
     m.del('isutrain:cancel_queue')
   end[0]
