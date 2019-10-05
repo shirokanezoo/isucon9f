@@ -317,20 +317,9 @@ module Isutrain
       usable_train_class_list = get_usable_train_class_list(from_station, to_station)
 
       train_list = if params[:train_class].nil? || params[:train_class].empty?
-        db.xquery(
-          'SELECT * FROM `train_master` WHERE `date` = ? AND `train_class` IN (?) AND `is_nobori` = ?',
-          date.strftime('%Y/%m/%d'),
-          usable_train_class_list,
-          is_nobori,
-        )
+        Isutrain.get_trains(date, usable_train_class_list, is_nobori)
       else
-        db.xquery(
-          'SELECT * FROM `train_master` WHERE `date` = ? AND `train_class` IN (?) AND `is_nobori` = ? AND `train_class` = ?',
-          date.strftime('%Y/%m/%d'),
-          usable_train_class_list,
-          is_nobori,
-          params[:train_class],
-        )
+        Isutrain.get_trains(date, [params[:train_class]], is_nobori)
       end
 
       stations = STATIONS_SORTED_BY_DISTANCE.dup

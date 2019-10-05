@@ -4,6 +4,10 @@ require './seat_master'
 require './train_master'
 
 module Isutrain
+  TRAIN_BY_DATE = TRAIN_MASTER.group_by do |train|
+    train[:date].strftime('%Y%m%d')
+  end
+
   TRAIN_BY_DATE_CLASS_NAME = TRAIN_MASTER.map do |train|
     [
       "#{train[:date].strftime('%Y%m%d')}-#{train[:train_class]}-#{train[:train_name]}",
@@ -26,6 +30,15 @@ module Isutrain
       id = "#{klass}-#{num}"
 
       SEAT_GROUP_BY_CLASS_AND_NUM[id].dup
+    end
+
+    def get_trains(date, classes, nobori)
+      id = date.strftime('%Y%m%d')
+      trains = TRAIN_BY_DATE[id]
+
+      trains.select do |train|
+        classes.include?(train[:train_class]) && train[:is_nobori] == nobori
+      end
     end
   end
 end
