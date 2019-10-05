@@ -15,6 +15,8 @@ require './station'
 require './distance_fare_master'
 require './fare_master'
 require './seat_master'
+require './train_master'
+require './mem_get'
 
 class Mysql2ClientWithNewRelic < Mysql2::Client
   def initialize(*args)
@@ -56,6 +58,7 @@ module Isutrain
 
       register Sinatra::Reloader
       also_reload './utils.rb'
+      also_reload './mem_get.rb'
     end
 
     set :protection, false
@@ -493,12 +496,7 @@ module Isutrain
 
       halt_with_error 404, '予約可能期間外です' unless check_available_date(date)
 
-      train = db.xquery(
-        'SELECT * FROM `train_master` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ?',
-        date.strftime('%Y/%m/%d'),
-        params[:train_class],
-        params[:train_name],
-      ).first
+      train = Isutrain.get_train(date, params[:train_class], params[:train_name])
 
       halt_with_error 404, '列車が存在しません' if train.nil?
 
@@ -524,11 +522,7 @@ module Isutrain
         halt_with_error 400, 'invalid train_class'
       end
 
-      seat_list = db.xquery(
-        'SELECT * FROM `seat_master` WHERE `train_class` = ? AND `car_number` = ? ORDER BY `seat_row`, `seat_column`',
-        params[:train_class],
-        params[:car_number],
-      )
+      seat_list = Isutrain.get_seats(params[:train_class], params[:car_number])
 
       seat_information_list = []
 
