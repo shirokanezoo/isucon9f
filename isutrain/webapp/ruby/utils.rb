@@ -53,24 +53,15 @@ module Isutrain
           `sr`.`seat_column`
         FROM
           `seat_reservations` `sr`,
-          `reservations` `r`,
-          `seat_master` `s`,
-          `station_master` `std`,
-          `station_master` `sta`
+          `reservations` `r`
         WHERE
-          `r`.`reservation_id` = `sr`.`reservation_id` AND
-          `s`.`train_class` = `r`.`train_class` AND
-          `s`.`car_number` = `sr`.`car_number` AND
-          `s`.`seat_column` = `sr`.`seat_column` AND
-          `s`.`seat_row` = `sr`.`seat_row` AND
-          `std`.`name` = `r`.`departure` AND
-          `sta`.`name` = `r`.`arrival`
+          `r`.`reservation_id` = `sr`.`reservation_id`
 __EOF
 
       if train[:is_nobori]
-        query = "#{query} AND (`sta`.`id` < ? AND ? <= `std`.`id`)\nUNION #{query} AND (`sta`.`id` < ? AND ? <= `std`.`id`)\nUNION #{query} AND (? < `sta`.`id` AND `std`.`id` < ?)"
+        query = "#{query} AND (`r`.`arrival_id` < ? AND ? <= `r`.`departure_id`)\nUNION #{query} AND (`r`.`arrival_id` < ? AND ? <= `r`.`departure_id`)\nUNION #{query} AND (? < `r`.`arrival_id` AND `r`.`departure_id` < ?)"
       else
-        query = "#{query} AND (`std`.`id` <= ? AND ? < `sta`.`id`)\nUNION #{query} AND (`std`.`id` <= ? AND ? < `sta`.`id`)\nUNION #{query} AND (`sta`.`id` < ? AND ? < `std`.`id`)"
+        query = "#{query} AND (`r`.`departure_id` <= ? AND ? < `r`.`arrival_id`)\nUNION #{query} AND (`r`.`departure_id` <= ? AND ? < `r`.`arrival_id`)\nUNION #{query} AND (`r`.`arrival_id` < ? AND ? < `r`.`departure_id`)"
       end
 
       seat_reservation_list = db.xquery(
