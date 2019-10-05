@@ -53,7 +53,7 @@ module Isutrain
 
     helpers do
       def db
-        return Thread.current[:db] if Thread.current[:db]  
+        return Thread.current[:db] if Thread.current[:db]
         params = {
           host: ENV['MYSQL_HOSTNAME'] || '127.0.0.1',
           port: ENV['MYSQL_PORT'] || '3306',
@@ -65,7 +65,7 @@ module Isutrain
           cast_booleans: true,
           symbolize_keys: true,
           reconnect: true,
-        )
+        }
         Thread.current[:db] = ENV['NEW_RELIC_AGENT_ENABLED'] ? Mysql2ClientWithNewRelic.new(params) : Mysql2::Client.new(params)
       end
 
