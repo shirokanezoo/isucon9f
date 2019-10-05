@@ -210,7 +210,7 @@ module Isutrain
         }
 
         reservation_response[:seats] = db.xquery(
-          'SELECT * FROM `seat_reservations` WHERE `reservation_id` = ?',
+          "SELECT * FROM `seat_reservations` WHERE `reservation_id` = ? /* reqid:#{@req_id} */",
           reservation[:reservation_id],
         ).to_a
 
@@ -757,7 +757,7 @@ module Isutrain
 
                 seat_reservation_list = begin
                   db.xquery(
-                    'SELECT * FROM `seat_reservations` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ? AND `car_number` = ? AND `seat_row` = ? AND `seat_column` = ? FOR UPDATE',
+                    "SELECT * FROM `seat_reservations` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ? AND `car_number` = ? AND `seat_row` = ? AND `seat_column` = ? FOR UPDATE /* reqid:#{@req_id} */",
                     date.strftime('%Y/%m/%d'),
                     seat[:train_class],
                     body_params[:train_name],
@@ -774,7 +774,7 @@ module Isutrain
                 seat_reservation_list.each do |seat_reservation|
                   reservation = begin
                     db.xquery(
-                      'SELECT * FROM `reservations` WHERE `reservation_id` = ? FOR UPDATE',
+                      "SELECT * FROM `reservations` WHERE `reservation_id` = ? FOR UPDATE /* reqid:#{@req_id} */",
                       seat_reservation[:reservation_id],
                     ).first
                   rescue Mysql2::Error => e
@@ -937,7 +937,7 @@ module Isutrain
 
         reservations = begin
           db.xquery(
-            "SELECT * FROM `reservations` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ? FOR UPDATE",
+            "SELECT * FROM `reservations` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ? FOR UPDATE /* reqid:#{@req_id} */",
             date.strftime('%Y/%m/%d'),
             body_params[:train_class],
             body_params[:train_name],
