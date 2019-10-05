@@ -14,6 +14,7 @@ require './utils'
 require './station'
 require './distance_fare_master'
 require './fare_master'
+require './seat_master'
 
 class Mysql2ClientWithNewRelic < Mysql2::Client
   def initialize(*args)
