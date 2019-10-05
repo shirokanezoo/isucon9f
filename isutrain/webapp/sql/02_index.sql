@@ -1,0 +1,1 @@
+alter table train_timetable_master add index idx1(date, train_class, train_name, station);
