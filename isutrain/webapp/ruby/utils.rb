@@ -32,7 +32,7 @@ module Isutrain
       # 指定種別の空き座席を返す
 
       # 全ての座席を取得する
-      seat_list = SEAT_MASTER_BY_CLASS.fetch("#{train[:train_class]}\0#{seat_class}\0#{is_smoking_seat}")
+      seat_list = SEAT_MASTER_BY_CLASS["#{train[:train_class]}\0#{seat_class}\0#{is_smoking_seat}"] || []
       available_seat_map = {}
       seat_list.each do |seat|
         key = "#{seat[:car_number]}_#{seat[:seat_row]}_#{seat[:seat_column]}"
