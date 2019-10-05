@@ -82,7 +82,7 @@ __EOF
           train[:train_class],
           train[:train_name],
           *placeholders,
-        ).each do |_|
+        ).each do |seat_reservation|
           result["#{seat_reservation[:seat_row]}\0#{seat_reservation[:seat_column]}"] = true
         end
       end
