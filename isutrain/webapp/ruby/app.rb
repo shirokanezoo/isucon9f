@@ -257,6 +257,7 @@ module Isutrain
           params = body_params.dup
           params['uri'] = request.path_info
           params['time'] = Time.now.strftime('%H%M%S%N')
+          params['user_id'] = session['user_id'] if session['user_id']
           File.open(path, 'a') do |f|
             f.puts params.to_json
           end
