@@ -756,6 +756,23 @@ module Isutrain
             end
 
             body_params[:seats] = [] # 座席リクエスト情報は空に
+            seat_reservations = begin
+              db.xquery("SELECT * FROM `seat_reservations` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ? FOR UPDATE /* reqid:#{@req_id} */",
+                date.strftime('%Y/%m/%d'),
+                body_params[:train_class],
+                body_params[:train_name],
+              ).map do |rev|
+                [
+                  "#{rev[:car_number]}-#{rev[:seat_row]}-#{rev[:seat_column]}",
+                  rev
+                ]
+              end.to_h
+            rescue Mysql2::Error => e
+              db_transaction_rollback
+              puts e.message
+              halt_with_error 400, e.message
+            end
+
             (1..16).each do |carnum|
               seat_list = begin
                 Isutrain.get_seats(body_params[:train_class], carnum).select do |s|
@@ -778,15 +795,8 @@ module Isutrain
                 }
 
                 seat_reservation_list = begin
-                  db.xquery(
-                    "SELECT * FROM `seat_reservations` WHERE `date` = ? AND `train_class` = ? AND `train_name` = ? AND `car_number` = ? AND `seat_row` = ? AND `seat_column` = ? FOR UPDATE /* reqid:#{@req_id} */",
-                    date.strftime('%Y/%m/%d'),
-                    seat[:train_class],
-                    body_params[:train_name],
-                    seat[:car_number],
-                    seat[:seat_row],
-                    seat[:seat_column],
-                  )
+                  id = "#{seat[:car_number]}-#{seat[:seat_row]}-#{seat[:seat_column]}"
+                  seat_reservations[id] || []
                 rescue Mysql2::Error => e
                   db_transaction_rollback
                   puts e.message
