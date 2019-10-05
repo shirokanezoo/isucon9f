@@ -999,7 +999,7 @@ module Isutrain
             # 上り
             if to_station[:id] < reserved_to_station[:id] && from_station[:id] <= reserved_to_station[:id]
               # pass
-            elsif to_station[:id] >= reserved_from_station[:id] && from_station > reserved_from_station[:id]
+            elsif to_station[:id] >= reserved_from_station[:id] && from_station[:id] > reserved_from_station[:id]
               # pass
             else
               secdup = true
