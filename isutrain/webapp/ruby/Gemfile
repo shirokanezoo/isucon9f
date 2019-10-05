@@ -5,10 +5,11 @@ gem 'sinatra'
 gem 'mysql2'
 gem 'mysql2-cs-bind'
 gem 'newrelic_rpm'
-gem 'redis'
-gem 'hiredis'
 
 gem 'stackprof', git: 'https://github.com/osyoyu/stackprof'
+
+gem 'redis'
+gem 'hiredis'
 
 group :development do
   gem 'sinatra-contrib'

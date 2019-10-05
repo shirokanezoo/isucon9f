@@ -6,6 +6,8 @@ require 'securerandom'
 require 'sinatra/base'
 require 'mysql2'
 require 'mysql2-cs-bind'
+require 'redis'
+require 'hiredis'
 require 'newrelic_rpm'
 require 'redis'
 require 'hiredis'
@@ -281,6 +283,9 @@ module Isutrain
       db.query('TRUNCATE seat_reservations')
       db.query('TRUNCATE reservations')
       db.query('TRUNCATE users')
+      redis.keys('isutrain:*').each_slice(100) do |ks|
+        redis.del(*ks)
+      end
 
       content_type :json
       {
