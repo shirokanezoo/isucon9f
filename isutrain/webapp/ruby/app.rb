@@ -273,8 +273,12 @@ module Isutrain
     end
 
     get '/api/stations' do
+      stations = STATIONS_SORTED_BY_ID.map do |station|
+        station.slice(:id, :name, :is_stop_express, :is_stop_semi_express, :is_stop_local)
+      end
+
       content_type :json
-      STATIONS_SORTED_BY_ID.to_json
+      stations.to_json
     end
 
     get '/api/train/search' do
