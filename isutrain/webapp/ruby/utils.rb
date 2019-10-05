@@ -30,6 +30,11 @@ module Isutrain
 
     def get_available_seats(train, from_station, to_station, seat_class, is_smoking_seat)
       # 指定種別の空き座席を返す
+      key = "isutrain:#{train[:train_class]}/#{train[:is_nobori]}/#{seat_class}/#{is_smoking_seat}/#{from_station[:id]}/#{to_station[:id]}"
+      cache = redis.get(key)
+      return cache.to_i if cache
+
+      puts key
 
       # 全ての座席を取得する
       seat_list = SEAT_MASTER_BY_CLASS["#{train[:train_class]}\0#{seat_class}\0#{is_smoking_seat}"] || []
@@ -82,7 +87,9 @@ __EOF
         available_seat_map.delete(key)
       end
 
-      available_seat_map.values
+      count = available_seat_map.values.length
+      redis.psetex(key, 2000, count.to_s)
+      count
     end
   end
 end

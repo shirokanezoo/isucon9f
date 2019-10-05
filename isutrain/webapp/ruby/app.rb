@@ -7,6 +7,8 @@ require 'sinatra/base'
 require 'mysql2'
 require 'mysql2-cs-bind'
 require 'newrelic_rpm'
+require 'redis'
+require 'hiredis'
 require 'new_relic/agent/method_tracer'
 require 'new_relic/agent/tracer'
 
@@ -83,6 +85,10 @@ module Isutrain
           reconnect: true,
         }
         Thread.current[:db] = ENV['NEW_RELIC_AGENT_ENABLED'] ? Mysql2ClientWithNewRelic.new(params) : Mysql2::Client.new(params)
+      end
+
+      def redis
+        Thread.current[:redis] ||= Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost'))
       end
 
       def get_user
@@ -424,30 +430,30 @@ module Isutrain
           reserved_smoke_avail_seats = get_available_seats(train, from_station, to_station, 'reserved', true)
 
           premium_avail = '○'
-          if premium_avail_seats.length.zero?
+          if premium_avail_seats.zero?
             premium_avail = '×'
-          elsif premium_avail_seats.length < 10
+          elsif premium_avail_seats < 10
             premium_avail = '△'
           end
 
           premium_smoke_avail = '○'
-          if premium_smoke_avail_seats.length.zero?
+          if premium_smoke_avail_seats.zero?
             premium_smoke_avail = '×'
-          elsif premium_smoke_avail_seats.length < 10
+          elsif premium_smoke_avail_seats < 10
             premium_smoke_avail = '△'
           end
 
           reserved_avail = '○'
-          if reserved_avail_seats.length.zero?
+          if reserved_avail_seats.zero?
             reserved_avail = '×'
-          elsif reserved_avail_seats.length < 10
+          elsif reserved_avail_seats < 10
             reserved_avail = '△'
           end
 
           reserved_smoke_avail = '○'
-          if reserved_smoke_avail_seats.length.zero?
+          if reserved_smoke_avail_seats.zero?
             reserved_smoke_avail = '×'
-          elsif reserved_smoke_avail_seats.length < 10
+          elsif reserved_smoke_avail_seats < 10
             reserved_smoke_avail = '△'
           end
 
