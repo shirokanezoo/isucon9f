@@ -242,13 +242,12 @@ module Isutrain
         if reservation_response[:seats].first[:car_number] == 0
           reservation_response[:seat_class] = 'non-reserved'
         else
-          seat = db.xquery(
-            'SELECT * FROM `seat_master` WHERE `train_class` = ? AND `car_number` = ? AND `seat_column` = ? AND `seat_row` = ?',
-            reservation[:train_class],
-            reservation_response[:car_number],
-            reservation_response[:seats].first[:seat_column],
-            reservation_response[:seats].first[:seat_row],
-          ).first
+          seat = Isutrain.get_seat({
+            train_class: reservation[:train_class],
+            car_number: reservation_response[:car_number],
+            seat_column: reservation_response[:seats].first[:seat_column],
+            seat_row: reservation_response[:seats].first[:seat_row],
+          })
 
           raise ErrorNoRows, 'seat is not found' if seat.nil?
 

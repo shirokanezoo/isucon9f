@@ -19,6 +19,13 @@ module Isutrain
     .sort_by { |s| "#{s[:seat_row].to_s.rjust(4, '0')}-#{s[:seat_column]}" }
     .group_by { |s| "#{s[:train_class]}-#{s[:car_number]}" }
 
+  SEAT_IDS = SEAT_MASTER.map do |s|
+    [
+      "#{s[:train_class]}-#{s[:car_number]}-#{s[:seat_column]}-#{s[:seat_row]}",
+      s,
+    ]
+  end.to_h
+
   class << self
     def get_train(date, klass, name)
       id = "#{date.strftime('%Y%m%d')}-#{klass}-#{name}"
@@ -30,6 +37,13 @@ module Isutrain
       id = "#{klass}-#{num}"
 
       SEAT_GROUP_BY_CLASS_AND_NUM[id].dup
+    end
+
+    def get_seat(s)
+      id = "#{s[:train_class]}-#{s[:car_number]}-#{s[:seat_column]}-#{s[:seat_row]}"
+      p id
+
+      SEAT_IDS[id]
     end
 
     def get_trains(date, classes, nobori)
