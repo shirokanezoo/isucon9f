@@ -263,7 +263,7 @@ module Isutrain
     end
 
     get '/api/settings' do
-      payment_api = ENV['PAYMENT_API'] || 'http://127.0.0.1:5000'
+      payment_api = ENV['PAYMENT_API'] || 'https://payment041.isucon9.hinatan.net/'
 
       content_type :json
       { payment_api: payment_api }.to_json
@@ -1296,7 +1296,7 @@ __EOF
           amount: reservation[:amount],
         }
 
-        payment_api = ENV['PAYMENT_API'] || 'http://payment:5000'
+        payment_api = ENV['PAYMENT_API'] || 'https://payment041.isucon9.hinatan.net/'
 
         uri = URI.parse("#{payment_api}/payment")
         req = Net::HTTP::Post.new(uri)
@@ -1501,7 +1501,7 @@ __EOF
         halt_with_error 500, '何らかの理由により予約はRejected状態です'
       when 'done'
         # 支払いをキャンセルする
-        payment_api = ENV['PAYMENT_API'] || 'http://payment:5000'
+        payment_api = ENV['PAYMENT_API'] || 'https://payment041.isucon9.hinatan.net/'
 
         uri = URI.parse("#{payment_api}/payment/#{reservation[:payment_id]}")
         req = Net::HTTP::Delete.new(uri)
