@@ -7,6 +7,5 @@ MYSQL_USER=isutrain
 MYSQL_DATABASE=isutrain
 MYSQL_PASSWORD=isutrain
 REDIS_URL=redis://isu1:6379/0
-NEW_RELIC_AGENT_ENABLED=false
 
 #NO_CACHE=1
