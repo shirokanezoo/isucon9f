@@ -824,7 +824,7 @@ __EOF
 
                 seat_reservation_list = begin
                   db.xquery(
-                    'SELECT `s`.* FROM `seat_reservations` `s`, `reservations` `r` WHERE `r`.`date` = ? AND `r`.`train_class` = ? AND `r`.`train_name` = ? AND `car_number` = ? AND `seat_row` = ? AND `seat_column` = ? FOR UPDATE SKIP LOCKED',
+                    'SELECT `s`.* FROM `seat_reservations` `s`, `reservations` `r` WHERE `r`.`date` = ? AND `r`.`train_class` = ? AND `r`.`train_name` = ? AND `car_number` = ? AND `seat_row` = ? AND `seat_column` = ? FOR UPDATE',
                     date.strftime('%Y/%m/%d'),
                     seat[:train_class],
                     body_params[:train_name],
@@ -841,7 +841,7 @@ __EOF
                 seat_reservation_list.each do |seat_reservation|
                   reservation = begin
                     db.xquery(
-                      'SELECT * FROM `reservations` WHERE `reservation_id` = ? FOR UPDATE SKIP LOCKED',
+                      'SELECT * FROM `reservations` WHERE `reservation_id` = ? FOR UPDATE',
                       seat_reservation[:reservation_id],
                     ).first
                   rescue Mysql2::Error => e
