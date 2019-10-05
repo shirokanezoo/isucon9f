@@ -13,21 +13,24 @@ loop do
     m.del('isutrain:cancel_queue')
   end[0]
 
-  payload = {
-    payment_id: payment_ids,
-  }.to_json
-  puts payload
 
-  req = Net::HTTP::Post.new(uri)
-  req.body = payload
-  req['Content-Type'] = 'application/json'
+  unless payment_ids.empty?
+    payload = {
+      payment_id: payment_ids,
+    }.to_json
+    puts payload
 
-  http = Net::HTTP.new(uri.host, uri.port)
-  http.use_ssl = uri.scheme == 'https'
-  res = http.start { http.request(req) }
+    req = Net::HTTP::Post.new(uri)
+    req.body = payload
+    req['Content-Type'] = 'application/json'
 
-  puts res.body
-  res.value
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = uri.scheme == 'https'
+    res = http.start { http.request(req) }
+
+    puts res.body
+    res.value
+  end
 
   sleep 1
 end
