@@ -1161,9 +1161,7 @@ module Isutrain
           halt_with_error 500, '座席予約の登録に失敗しました'
         end
       rescue => e
-        puts e.message
-        db_transaction_rollback
-        halt_with_error 500, e.message
+        raise
       end
 
       response = {
