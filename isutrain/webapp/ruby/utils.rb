@@ -29,6 +29,50 @@ module Isutrain
       usable.values
     end
 
+    def get_reserved_seats(train, date, from_station, to_station, car_number)
+      query = <<~__EOF
+      SELECT
+        `seat_reservations`.`seat_row`
+       ,`seat_reservations`.`seat_column`
+      FROM
+        `seat_reservations`
+      INNER JOIN
+        `reservations` ON `reservations`.`reservation_id` = `seat_reservations`.`reservation_id`
+      WHERE
+        `seat_reservations`.`car_number` = ? AND
+        `reservations`.`date` = ? AND
+        `reservations`.`train_class` = ? AND
+        `reservations`.`train_name` = ?
+__EOF
+
+      if train[:is_nobori]
+        query = "#{query} AND (`reservations`.`arrival_id` < ? AND ? <= `reservations`.`departure_id`)\nUNION #{query} AND (`reservations`.`arrival_id` < ? AND ? <= `reservations`.`departure_id`)\nUNION #{query} AND (? < `reservations`.`arrival_id` AND `reservations`.`departure_id` < ?)"
+      else
+        query = "#{query} AND (`reservations`.`departure_id` <= ? AND ? < `reservations`.`arrival_id`)\nUNION #{query} AND (`reservations`.`departure_id` <= ? AND ? < `reservations`.`arrival_id`)\nUNION #{query} AND (`reservations`.`arrival_id` < ? AND ? < `reservations`.`departure_id`)"
+      end
+
+      placeholders = [
+        car_number,
+        date.strftime('%Y/%m/%d'),
+        train[:train_class],
+        train[:train_name],
+      ]
+      db.xquery(
+        query,
+        *placeholders,
+        from_station[:id],
+        from_station[:id],
+        *placeholders,
+        to_station[:id],
+        to_station[:id],
+        *placeholders,
+        from_station[:id],
+        to_station[:id],
+      ).map do |_|
+        ["#{seat_reservation[:seat_row]}\0#{seat_reservation[:seat_column]}", true]
+      end.to_h
+    end
+
     def get_available_seats(train, from_station, to_station, seat_class, is_smoking_seat)
       # 指定種別の空き座席を返す
       key = "isutrain:#{train[:train_class]}/#{train[:is_nobori]}/#{seat_class}/#{is_smoking_seat}/#{from_station[:id]}/#{to_station[:id]}"

@@ -557,97 +557,20 @@ module Isutrain
       end
 
       seat_list = Isutrain.get_seats(params[:train_class], params[:car_number])
+      reserved_seats = get_reserved_seats(train, date, from_station, to_station, params[:car_number])
 
-      seat_information_list = []
-
-      seat_list.each do |seat|
-        s = {
+      seat_information_list  = seat_list.map do |seat|
+        {
           row: seat[:seat_row],
           column: seat[:seat_column],
           class: seat[:seat_class],
           is_smoking_seat: seat[:is_smoking_seat],
-          is_occupied: false
+          is_occupied: !!reserved_seats["#{seat[:seat_row]}\0#{seat[:seat_columnn]}"],
         }
-
-        query = <<__EOF
-          SELECT
-            `s`.*
-          FROM
-            `seat_reservations` `s`,
-            `reservations` `r`
-          WHERE
-            `r`.`date` = ? AND
-            `r`.`train_class` = ? AND
-            `r`.`train_name` = ? AND
-            `car_number` = ? AND
-            `seat_row` = ? AND
-            `seat_column` = ?
-__EOF
-
-        seat_reservation_list = db.xquery(
-          query,
-          date.strftime('%Y/%m/%d'),
-          seat[:train_class],
-          params[:train_name],
-          seat[:car_number],
-          seat[:seat_row],
-          seat[:seat_column],
-        )
-
-        p seat_reservation_list
-
-        seat_reservation_list.each do |seat_reservation|
-          reservation = db.xquery(
-            'SELECT * FROM `reservations` WHERE `reservation_id` = ?',
-            seat_reservation[:reservation_id],
-          ).first
-
-          departure_station = STATIONS_HASH_BY_NAME[reservation[:departure]]
-          arrival_station = STATIONS_HASH_BY_NAME[reservation[:arrival]]
-
-          if train[:is_nobori]
-            # 上り
-            if to_station[:id] < arrival_station[:id] && from_station[:id] <= arrival_station[:id]
-              # pass
-            elsif to_station[:id] >= departure_station[:id] && from_station[:id] > departure_station[:id]
-              # pass
-            else
-              s[:is_occupied] = true
-            end
-          else
-            # 下り
-            if from_station[:id] < departure_station[:id] && to_station[:id] <= departure_station[:id]
-              # pass
-            elsif from_station[:id] >= arrival_station[:id] && to_station[:id] > arrival_station[:id]
-              # pass
-            else
-              s[:is_occupied] = true
-            end
-          end
-        end
-
-        puts s[:is_occupied] ? 'true' : 'false'
-
-        seat_information_list << s
       end
 
       # 各号車の情報
-      simple_car_information_list = []
-      i = 1
-      loop do
-        seat = Isutrain.get_seats(params[:train_class], i)&.first
-
-        break if seat.nil?
-
-        simple_car_information = {
-          car_number: i,
-          seat_class: seat[:seat_class],
-        }
-
-        simple_car_information_list << simple_car_information
-
-        i += 1
-      end
+      simple_car_information_list = SEAT_MASTER_CAR_INFO_BY_CLASS.fetch(train[:train_class])
 
       c = {
         date: date.strftime('%Y/%m/%d'),

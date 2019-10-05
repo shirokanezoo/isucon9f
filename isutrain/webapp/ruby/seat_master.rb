@@ -23653,4 +23653,5 @@ module Isutrain
   :seat_class=>"reserved",
   :is_smoking_seat=>false}]
   SEAT_MASTER_BY_CLASS = SEAT_MASTER.group_by { |_| "#{_.fetch(:train_class)}\0#{_.fetch(:seat_class)}\0#{_.fetch(:is_smoking_seat)}" }
+  SEAT_MASTER_CAR_INFO_BY_CLASS = SEAT_MASTER.group_by { |_| [_.fetch(:train_class), _.fetch(:car_number)] }.map { |(train_class,car_number),vs| [train_class,car_number,vs[0][:seat_class]] }.group_by{ |_| _[0] }.transform_values { |vs| vs.map { |_|  {car_number: _[1], seat_class: _[2] }  }}
 end
