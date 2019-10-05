@@ -946,14 +946,10 @@ module Isutrain
             puts "XXXX #{z}"
 
             seat_list = begin
-              db.xquery(
-                'SELECT * FROM `seat_master` WHERE `train_class` = ? AND `car_number` = ? AND `seat_column` = ? AND `seat_row` = ? AND `seat_class` = ?',
-                body_params[:train_class],
-                body_params[:car_number],
-                z[:column],
-                z[:row],
-                body_params[:seat_class],
-              )
+              (Isutrain.get_seats(body_params[:train_class],body_params[:car_number]) || []).select do |seat|
+                pp seat
+                seat[:seat_row] == z[:row].to_i && seat[:seat_column] == z[:column] && seat[:seat_class] == body_params[:seat_class]
+              end
             rescue Mysql2::Error => e
               puts e.message
               db_transaction_rollback
