@@ -1,3 +1,4 @@
+require 'net/http'
 require 'json'
 require 'redis'
 $stdout.sync = true
