@@ -1429,7 +1429,7 @@ module Isutrain
         halt_with_error 500, '何らかの理由により予約はRejected状態です'
       when 'done'
         # 支払いをキャンセルする
-        m.lpush('isutrain:cancel_queue', reservation[:payment_id])
+        redis.lpush('isutrain:cancel_queue', reservation[:payment_id])
       else
         # pass
       end
