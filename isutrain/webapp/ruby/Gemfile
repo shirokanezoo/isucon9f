@@ -8,6 +8,8 @@ gem 'newrelic_rpm'
 
 gem 'stackprof', git: 'https://github.com/osyoyu/stackprof'
 
+gem 'rack-timeout'
+
 gem 'expeditor'
 
 gem 'redis'

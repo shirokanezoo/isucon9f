@@ -106,8 +106,8 @@ module Isutrain
       end
 
       def db_transaction_begin
-        Thread.current[:db_transaction] = :open
         db.query("BEGIN")
+        Thread.current[:db_transaction] = :open
       end
 
       def db_transaction_commit
