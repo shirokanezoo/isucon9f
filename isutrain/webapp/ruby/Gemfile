@@ -6,6 +6,8 @@ gem 'mysql2'
 gem 'mysql2-cs-bind'
 gem 'newrelic_rpm'
 
+gem 'stackprof', git: 'https://github.com/osyoyu/stackprof'
+
 group :development do
   gem 'sinatra-contrib'
 end

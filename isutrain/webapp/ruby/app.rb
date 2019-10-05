@@ -18,8 +18,9 @@ class Mysql2ClientWithNewRelic < Mysql2::Client
 
   def query(sql, *args)
     if ENV['LOCAL']
-      puts sql
-      puts caller(0)[1]
+      s = Time.now
+      puts "QUERY: #{sql.gsub(/\r?\n/,' ')}"
+      puts "QUERY^ #{caller(0)[1]}"
     end
     callback = -> (result, metrics, elapsed) do
       NewRelic::Agent::Datastores.notice_sql(sql, metrics, elapsed)
@@ -27,7 +28,13 @@ class Mysql2ClientWithNewRelic < Mysql2::Client
     op = sql[/^(select|insert|update|delete|begin|commit|rollback)/i] || 'other'
     table = sql[/\bdistance_fare_master|fare_master|reservations|seat_master|seat_reservations|station_master|train_master|train_timetable_master|users\b/] || 'other'
     NewRelic::Agent::Datastores.wrap('MySQL', op, table, callback) do
-      super
+      retval = super
+      if s
+        e = Time.now
+        t = e - s
+        puts("QUERY< %.2f sec" % t)
+      end
+      retval
     end
   end
 end

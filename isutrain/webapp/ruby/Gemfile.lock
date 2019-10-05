@@ -1,3 +1,9 @@
+GIT
+  remote: https://github.com/osyoyu/stackprof
+  revision: 605f56165bb2ebcc425fca386587d5fe8a174911
+  specs:
+    stackprof (0.2.12)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -53,6 +59,7 @@ DEPENDENCIES
   rspec
   sinatra
   sinatra-contrib
+  stackprof!
 
 BUNDLED WITH
-   1.17.2
+   1.17.3
