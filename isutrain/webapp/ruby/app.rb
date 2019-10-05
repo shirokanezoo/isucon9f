@@ -601,7 +601,7 @@ __EOF
       simple_car_information_list = []
       i = 1
       loop do
-        seat = Isutrain.get_seats(params[:train_class], i)
+        seat = Isutrain.get_seats(params[:train_class], i)[0]
 
         break if seat.nil?
 
