@@ -601,11 +601,7 @@ __EOF
       simple_car_information_list = []
       i = 1
       loop do
-        seat = db.xquery(
-          'SELECT * FROM `seat_master` WHERE `train_class` = ? AND `car_number` = ? ORDER BY `seat_row`, `seat_column` LIMIT 1',
-          params[:train_class],
-          i,
-        ).first
+        seat = Isutrain.get_seats(params[:train_class], i)
 
         break if seat.nil?
 
